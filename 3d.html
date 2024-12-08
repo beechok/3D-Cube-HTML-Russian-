@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ru">
+<link rel="stylesheet" href="https://unpkg.com/xp.css" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3DCube</title>
+    <style>
+        body { margin: 0; display: flex; flex-direction: column; align-items: center; }
+        canvas { display: block; }
+        #controls { margin: 20px; }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <input type="file" id="textureLoader" accept="image/*">
+        <button id="removeTexture">Убрать текстуру</button>
+        <input type="color" id="colorPicker" value="#00ff00">
+        <button id="applyColor">Применить цвет</button>
+        <button id="reset">Сброс</button>
+        <div id="fpsCounter">FPS: 0</div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        const geometry = new THREE.BoxGeometry();
+        let texture = new THREE.TextureLoader().load('https://threejs.org/examples/textures/crate.gif'); // Загрузка текстуры по умолчанию
+        const material = new THREE.MeshBasicMaterial({ map: texture });
+        const cube = new THREE.Mesh(geometry, material);
+        scene.add(cube);
+
+        camera.position.z = 5;
+
+        // FPS счётчик
+        let fpsCounter = document.getElementById('fpsCounter');
+        let lastFrameTime = performance.now();
+        let frameCount = 0;
+
+        let rotationSpeed = 0.01;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const currentTime = performance.now();
+            frameCount++;
+            if (currentTime - lastFrameTime >= 1000) {
+                fpsCounter.innerText = `FPS: ${frameCount}`;
+                frameCount = 0;
+                lastFrameTime = currentTime;
+            }
+            cube.rotation.x += rotationSpeed;
+            cube.rotation.y += rotationSpeed;
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Загрузка текстуры
+        document.getElementById('textureLoader').addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    texture = new THREE.TextureLoader().load(e.target.result, () => {
+                        cube.material.map = texture;
+                        cube.material.needsUpdate = true;
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Удаление текстуры
+        document.getElementById('removeTexture').addEventListener('click', () => {
+            cube.material.map = null;
+            cube.material.needsUpdate = true;
+        });
+
+        // Применение цвета
+        document.getElementById('applyColor').addEventListener('click', () => {
+            const color = document.getElementById('colorPicker').value;
+            cube.material.color.set(color);
+        });
+
+        // Сброс
+        document.getElementById('reset').addEventListener('click', () => {
+            cube.rotation.set(0, 0, 0);
+            rotationSpeed = 0.01;
+            document.getElementById('rotationSpeed').value = rotationSpeed;
+            cube.material.map = null; // Удаляем текстуру
+            cube.material.needsUpdate = true;
+            cube.material.color.set(0x00ff00); // Сброс цвета
+        });
+    </script>
+</body>
+</html>
